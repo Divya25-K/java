@@ -1,0 +1,204 @@
+package com.payroll;
+import java.sql.*;
+import java.util.Scanner;
+public class PayrollDB {
+   static final String URL = "jdbc:oracle:thin:@localhost:1521:orcl";
+   static final String USER = "scott";
+   static final String PASS = "tiger";
+   static final int TOTAL_DAYS = 30;
+   public static void main(String[] args) {
+       Scanner sc = new Scanner(System.in);
+       try {
+           Connection con = DriverManager.getConnection(URL, USER, PASS);
+           int choice;
+           do {
+               System.out.println("\n========= PAYROLL MANAGEMENT SYSTEM =========");
+               System.out.println("1. Add Employee");
+               System.out.println("2. View All Employees");
+               System.out.println("3. Search Employee");
+               System.out.println("4. Generate Salary Slip");
+               System.out.println("5. Exit");
+               System.out.println("=============================================");
+               System.out.print("Enter choice: ");
+               choice = sc.nextInt();
+               switch (choice) {
+                   case 1:
+                       addEmployee(con, sc);
+                       break;
+                   case 2:
+                       viewEmployees(con);
+                       break;
+                   case 3:
+                       searchEmployee(con, sc);
+                       break;
+                   case 4:
+                       generateSalarySlip(con, sc);
+                       break;
+                   case 5:
+                       System.out.println("Exiting...");
+                       break;
+                   default:
+                       System.out.println("Invalid choice!");
+               }
+           } while (choice != 5);
+           sc.close();
+           con.close();
+       } catch (Exception e) {
+           System.out.println(e);
+       }
+   }
+   // ================= ADD EMPLOYEE =================
+   public static void addEmployee(Connection con, Scanner sc) {
+       try {
+           System.out.print("Enter ID: ");
+           int id = sc.nextInt();
+           sc.nextLine();
+           System.out.print("Enter Name: ");
+           String name = sc.nextLine();
+           System.out.print("Enter Age: ");
+           int age = sc.nextInt();
+           if (age < 18) {
+               System.out.println("Employee age must be 18 or above.");
+               return;
+           }
+           System.out.println("Select Department:");
+           System.out.println("1. HR");
+           System.out.println("2. IT");
+           System.out.println("3. SALES");
+           System.out.println("4. FINANCE");
+           System.out.print("Enter Department Choice: ");
+           int dChoice = sc.nextInt();
+           String dept = "";
+           double baseSalary = 0;
+           double leaveDeduction = 0;
+           switch (dChoice) {
+               case 1:
+                   dept = "HR";
+                   baseSalary = 20000;
+                   leaveDeduction = 500;
+                   break;
+               case 2:
+                   dept = "IT";
+                   baseSalary = 30000;
+                   leaveDeduction = 1000;
+                   break;
+               case 3:
+                   dept = "SALES";
+                   baseSalary = 25000;
+                   leaveDeduction = 700;
+                   break;
+               case 4:
+                   dept = "FINANCE";
+                   baseSalary = 28000;
+                   leaveDeduction = 900;
+                   break;
+               default:
+                   System.out.println("Invalid Department!");
+                   return;
+           }
+           System.out.print("Leaves Taken: ");
+           int leaves = sc.nextInt();
+           if (leaves < 0 || leaves > 30) {
+               System.out.println("Leaves should be between 0 and 30.");
+               return;
+           }
+           double finalSalary = baseSalary - (leaves * leaveDeduction);
+           String query = "INSERT INTO employee VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+           PreparedStatement ps = con.prepareStatement(query);
+           ps.setInt(1, id);
+           ps.setString(2, name);
+           ps.setInt(3, age);
+           ps.setString(4, dept);
+           ps.setInt(5, TOTAL_DAYS);
+           ps.setInt(6, leaves);
+           ps.setDouble(7, baseSalary);
+           ps.setDouble(8, finalSalary);
+           ps.executeUpdate();
+           System.out.println("Employee Added Successfully!");
+       } catch (SQLIntegrityConstraintViolationException e) {
+           System.out.println("Duplicate ID! Try different ID.");
+       } catch (Exception e) {
+           System.out.println(e);
+       }
+   }
+   // ================= VIEW EMPLOYEES =================
+   public static void viewEmployees(Connection con) {
+       try {
+           Statement stmt = con.createStatement();
+           ResultSet rs = stmt.executeQuery("SELECT * FROM employee");
+           System.out.println("\n-----------------------------------------------------------------------------------");
+           System.out.printf("%-5s %-12s %-5s %-10s %-10s %-10s %-12s %-12s\n",
+                   "ID", "Name", "Age", "Dept", "Days", "Leaves", "Base Salary", "Final Salary");
+           System.out.println("-----------------------------------------------------------------------------------");
+           while (rs.next()) {
+               System.out.printf("%-5d %-12s %-5d %-10s %-10d %-10d %-12.2f %-12.2f\n",
+                       rs.getInt("id"),
+                       rs.getString("name"),
+                       rs.getInt("age"),
+                       rs.getString("department"),
+                       rs.getInt("total_days"),
+                       rs.getInt("leaves_taken"),
+                       rs.getDouble("base_salary"),
+                       rs.getDouble("final_salary"));
+           }
+           System.out.println("-----------------------------------------------------------------------------------");
+       } catch (Exception e) {
+           System.out.println(e);
+       }
+   }
+   // ================= SEARCH EMPLOYEE =================
+   public static void searchEmployee(Connection con, Scanner sc) {
+       try {
+           System.out.print("Enter Employee ID to Search: ");
+           int id = sc.nextInt();
+           String query = "SELECT * FROM employee WHERE id = ?";
+           PreparedStatement ps = con.prepareStatement(query);
+           ps.setInt(1, id);
+           ResultSet rs = ps.executeQuery();
+           if (rs.next()) {
+               System.out.println("\nEmployee Found");
+               System.out.println("-----------------------------");
+               System.out.println("ID          : " + rs.getInt("id"));
+               System.out.println("Name        : " + rs.getString("name"));
+               System.out.println("Age         : " + rs.getInt("age"));
+               System.out.println("Department  : " + rs.getString("department"));
+               System.out.println("Total Days  : " + rs.getInt("total_days"));
+               System.out.println("Leaves      : " + rs.getInt("leaves_taken"));
+               System.out.println("Base Salary : " + rs.getDouble("base_salary"));
+               System.out.println("Final Salary: " + rs.getDouble("final_salary"));
+               System.out.println("-----------------------------");
+           } else {
+               System.out.println("Employee not found.");
+           }
+       } catch (Exception e) {
+           System.out.println(e);
+       }
+   }
+   // ================= GENERATE SALARY SLIP =================
+   public static void generateSalarySlip(Connection con, Scanner sc) {
+       try {
+           System.out.print("Enter Employee ID: ");
+           int id = sc.nextInt();
+           String query = "SELECT * FROM employee WHERE id = ?";
+           PreparedStatement ps = con.prepareStatement(query);
+           ps.setInt(1, id);
+           ResultSet rs = ps.executeQuery();
+           if (rs.next()) {
+               double deduction = rs.getDouble("base_salary") - rs.getDouble("final_salary");
+               System.out.println("\n========== SALARY SLIP ==========");
+               System.out.println("Employee ID   : " + rs.getInt("id"));
+               System.out.println("Name          : " + rs.getString("name"));
+               System.out.println("Department    : " + rs.getString("department"));
+               System.out.println("Base Salary   : " + rs.getDouble("base_salary"));
+               System.out.println("Leaves Taken  : " + rs.getInt("leaves_taken"));
+               System.out.println("Deduction     : " + deduction);
+               System.out.println("Final Salary  : " + rs.getDouble("final_salary"));
+               System.out.println("=================================");
+           } else {
+               System.out.println("Employee not found.");
+           }
+       } catch (Exception e) {
+           System.out.println(e);
+       }
+   }
+}
