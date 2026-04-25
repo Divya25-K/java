@@ -1,0 +1,40 @@
+-- =========================================
+-- PAYROLL MANAGEMENT SYSTEM (SQL*Plus)
+-- =========================================
+
+
+-- If table already exists, drop it first
+DROP TABLE employee;
+
+
+-- Create Employee Table
+CREATE TABLE employee (
+    id NUMBER PRIMARY KEY,
+    name VARCHAR2(50) NOT NULL,
+    age NUMBER(3) CHECK (age >= 18),
+    department VARCHAR2(20) NOT NULL,
+    total_days NUMBER DEFAULT 30,
+    leaves_taken NUMBER CHECK (leaves_taken BETWEEN 0 AND 30),
+    base_salary NUMBER(10,2),
+    final_salary NUMBER(10,2)
+);
+
+
+-- =========================================
+-- SAMPLE VALUES (optional)
+-- =========================================
+
+
+INSERT INTO employee VALUES (101, 'Ram', 25, 'IT', 30, 2, 30000, 28000);
+INSERT INTO employee VALUES (102, 'Priya', 24, 'HR', 30, 1, 20000, 19500);
+INSERT INTO employee VALUES (103, 'Arun', 27, 'SALES', 30, 3, 25000, 22900);
+INSERT INTO employee VALUES (104, 'Divya', 26, 'FINANCE', 30, 2, 28000, 26200);
+
+
+COMMIT;
+
+
+-- =========================================
+-- VIEW TABLE
+-- =========================================
+SELECT * FROM employee;
